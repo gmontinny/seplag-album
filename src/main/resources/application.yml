@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: seplag-album
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/seplag_album}
+    username: ${DB_USERNAME:user}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  accessKey: ${MINIO_ACCESS_KEY:minioadmin}
+  secretKey: ${MINIO_SECRET_KEY:minioadmin}
+  bucketName: ${MINIO_BUCKET:albuns}
+
+jwt:
+  secret: ${JWT_SECRET:9a721adbd259744e280724ad331a9807530263f03b8e5153f3e2e0321d51f28b}
+  expiration: ${JWT_EXPIRATION:300000}
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,liveness,readiness
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
