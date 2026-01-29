@@ -47,7 +47,7 @@ O projeto segue o padrão de camadas clássico do Spring Boot:
     docker-compose up -d --build
     ```
     Isso iniciará o **PostgreSQL**, o **MinIO** e a **própria aplicação** (porta 8080).
-    *Nota: O Dockerfile utiliza a imagem `openjdk:25-jdk-slim` para suportar o Java 25.*
+    *Nota: O Dockerfile utiliza a imagem `eclipse-temurin:25-jdk-noble` para suportar o Java 25.*
 
 3.  **Executar localmente (Opcional):**
     Se preferir rodar apenas o banco e storage no Docker e a app localmente:
