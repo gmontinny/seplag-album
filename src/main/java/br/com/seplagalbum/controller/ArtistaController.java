@@ -1,5 +1,8 @@
 package br.com.seplagalbum.controller;
 
+import br.com.seplagalbum.dto.ArtistaRequest;
+import br.com.seplagalbum.dto.ArtistaResponse;
+import br.com.seplagalbum.mapper.ArtistaMapper;
 import br.com.seplagalbum.model.Artista;
 import br.com.seplagalbum.service.ArtistaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -7,11 +10,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/artistas")
@@ -20,13 +25,17 @@ import java.util.List;
 public class ArtistaController {
 
     private final ArtistaService service;
+    private final ArtistaMapper mapper;
 
     @Operation(summary = "Listar artistas", description = "Retorna uma lista de artistas, permitindo busca por nome e ordenação")
     @GetMapping
-    public ResponseEntity<List<Artista>> listar(
+    public ResponseEntity<List<ArtistaResponse>> listar(
             @Parameter(description = "Nome do artista para busca parcial") @RequestParam(required = false) String nome,
             @Parameter(description = "Ordem alfabética (asc/desc)") @RequestParam(defaultValue = "asc") String ordem) {
-        return ResponseEntity.ok(service.listar(nome, ordem));
+        List<ArtistaResponse> response = service.listar(nome, ordem).stream()
+                .map(mapper::toResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Criar novo artista", description = "Cadastra um novo artista no sistema")
@@ -35,9 +44,10 @@ public class ArtistaController {
             @ApiResponse(responseCode = "403", description = "Não autorizado")
     })
     @PostMapping
-    public ResponseEntity<Artista> criar(@RequestBody Artista artista) {
-        artista.setId(null);
-        return ResponseEntity.ok(service.salvar(artista));
+    public ResponseEntity<ArtistaResponse> criar(@Valid @RequestBody ArtistaRequest request) {
+        Artista artista = mapper.toEntity(request);
+        Artista salvo = service.salvar(artista);
+        return ResponseEntity.ok(mapper.toResponse(salvo));
     }
 
     @Operation(summary = "Atualizar artista", description = "Atualiza os dados de um artista existente")
@@ -46,11 +56,12 @@ public class ArtistaController {
             @ApiResponse(responseCode = "404", description = "Artista não encontrado")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<Artista> atualizar(
+    public ResponseEntity<ArtistaResponse> atualizar(
             @Parameter(description = "ID do artista") @PathVariable Long id,
-            @RequestBody Artista artista) {
+            @Valid @RequestBody ArtistaRequest request) {
         Artista existente = service.buscarPorId(id);
-        artista.setId(existente.getId());
-        return ResponseEntity.ok(service.salvar(artista));
+        mapper.updateEntity(request, existente);
+        Artista atualizado = service.salvar(existente);
+        return ResponseEntity.ok(mapper.toResponse(atualizado));
     }
 }

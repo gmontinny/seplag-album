@@ -1,5 +1,6 @@
 package br.com.seplagalbum.service;
 
+import br.com.seplagalbum.exception.ResourceNotFoundException;
 import br.com.seplagalbum.model.Artista;
 import br.com.seplagalbum.repository.ArtistaRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,8 @@ public class ArtistaService {
     }
 
     public Artista buscarPorId(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Artista não encontrado"));
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artista com ID " + id + " não encontrado"));
     }
 
     public Artista salvar(Artista artista) {

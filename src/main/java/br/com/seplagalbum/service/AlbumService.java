@@ -1,5 +1,6 @@
 package br.com.seplagalbum.service;
 
+import br.com.seplagalbum.exception.ResourceNotFoundException;
 import br.com.seplagalbum.model.Album;
 import br.com.seplagalbum.model.Artista;
 import br.com.seplagalbum.repository.AlbumRepository;
@@ -24,7 +25,8 @@ public class AlbumService {
     }
 
     public Album buscarPorId(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum com ID " + id + " não encontrado"));
     }
 
     public Album salvar(Album album) {

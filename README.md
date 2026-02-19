@@ -23,13 +23,28 @@ O projeto segue o padrão de camadas clássico do Spring Boot:
 2.  **Service**: Contém a lógica de negócio da aplicação.
 3.  **Repository**: Interface de comunicação com o banco de dados PostgreSQL via Spring Data JPA.
 4.  **Model/Entity**: Representação das tabelas do banco de dados.
-5.  **DTO**: Objetos de transferência de dados para requisições e respostas.
-6.  **Security**: Configurações de segurança, filtros JWT e provedores de autenticação.
-7.  **Config**: Configurações gerais (CORS, MinIO, OpenAPI, WebSocket).
+5.  **DTO**: Objetos de transferência de dados para requisições (Request) e respostas (Response).
+6.  **Mapper**: Classes responsáveis pela conversão entre entidades e DTOs.
+7.  **Exception**: Tratamento centralizado de exceções com respostas padronizadas.
+8.  **Security**: Configurações de segurança, filtros JWT e provedores de autenticação.
+9.  **Config**: Configurações gerais (CORS, MinIO, OpenAPI, WebSocket).
 
 ### Relacionamentos
 - **Artista <-> Álbum**: Relacionamento N:N (Muitos para Muitos).
 - **Otimização N+1**: Uso de `@EntityGraph` no repositório de álbuns para carregar artistas em uma única query.
+
+### DTOs e Mappers
+- **Request DTOs**: `ArtistaRequest`, `AlbumRequest` - Recebem dados nas requisições POST/PUT.
+- **Response DTOs**: `ArtistaResponse`, `AlbumResponse` - Retornam dados nas respostas.
+- **Mappers**: `ArtistaMapper`, `AlbumMapper` - Convertem entre entidades e DTOs, separando a camada de apresentação da camada de domínio.
+
+### Validações e Tratamento de Erros
+- **Bean Validation**: Validações automáticas nos DTOs usando anotações `@NotBlank`, `@NotNull`.
+- **GlobalExceptionHandler**: Tratamento centralizado de exceções com respostas padronizadas:
+  - **404 Not Found**: Recurso não encontrado
+  - **400 Bad Request**: Erros de validação
+  - **401 Unauthorized**: Falha na autenticação
+  - **500 Internal Server Error**: Erros genéricos
 
 ## 🛠️ Como Executar
 
