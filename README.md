@@ -36,10 +36,11 @@ O projeto segue o padrão de camadas clássico do Spring Boot:
 ### DTOs e Mappers
 - **Request DTOs**: `ArtistaRequest`, `AlbumRequest` - Recebem dados nas requisições POST/PUT.
 - **Response DTOs**: `ArtistaResponse`, `AlbumResponse` - Retornam dados nas respostas.
-- **Mappers**: `ArtistaMapper`, `AlbumMapper` - Convertem entre entidades e DTOs, separando a camada de apresentação da camada de domínio.
+- **Mappers**: `ArtistaMapper`, `AlbumMapper` - Convertem entre entidades e DTOs usando **MapStruct**, separando a camada de apresentação da camada de domínio.
 
 ### Validações e Tratamento de Erros
-- **Bean Validation**: Validações automáticas nos DTOs usando anotações `@NotBlank`, `@NotNull`.
+- **Bean Validation**: Validações automáticas nos DTOs usando anotações `@NotBlank`, `@NotNull`, `@Size`.
+- **Mensagens Internacionalizadas**: Mensagens de validação centralizadas no arquivo `messages.properties` com suporte UTF-8.
 - **GlobalExceptionHandler**: Tratamento centralizado de exceções com respostas padronizadas:
   - **404 Not Found**: Recurso não encontrado
   - **400 Bad Request**: Erros de validação

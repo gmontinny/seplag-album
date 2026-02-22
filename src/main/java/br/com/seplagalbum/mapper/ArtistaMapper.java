@@ -3,28 +3,20 @@ package br.com.seplagalbum.mapper;
 import br.com.seplagalbum.dto.ArtistaRequest;
 import br.com.seplagalbum.dto.ArtistaResponse;
 import br.com.seplagalbum.model.Artista;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
-@Component
-public class ArtistaMapper {
+@Mapper(componentModel = "spring")
+public interface ArtistaMapper {
 
-    public Artista toEntity(ArtistaRequest request) {
-        Artista artista = new Artista();
-        artista.setNome(request.getNome());
-        artista.setTipo(request.getTipo());
-        return artista;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "albuns", ignore = true)
+    Artista toEntity(ArtistaRequest request);
 
-    public ArtistaResponse toResponse(Artista artista) {
-        return new ArtistaResponse(
-                artista.getId(),
-                artista.getNome(),
-                artista.getTipo()
-        );
-    }
+    ArtistaResponse toResponse(Artista artista);
 
-    public void updateEntity(ArtistaRequest request, Artista artista) {
-        artista.setNome(request.getNome());
-        artista.setTipo(request.getTipo());
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "albuns", ignore = true)
+    void updateEntity(ArtistaRequest request, @MappingTarget Artista artista);
 }

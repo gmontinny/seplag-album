@@ -1,6 +1,8 @@
 spring:
   application:
     name: seplag-album
+  messages:
+    encoding: UTF-8
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/seplag_album}
     username: ${DB_USERNAME:user}

@@ -1,0 +1,10 @@
+# Mensagens customizadas da aplicação (não validação)
+app:
+  messages:
+    welcome: "Bem-vindo à API Seplag Album"
+    error:
+      generic: "Ocorreu um erro inesperado"
+      notfound: "Recurso não encontrado"
+    success:
+      created: "Recurso criado com sucesso"
+      updated: "Recurso atualizado com sucesso"
