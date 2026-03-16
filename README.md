@@ -122,7 +122,7 @@ A maioria dos endpoints requer um token JWT no cabeçalho `Authorization`.
 As capas dos álbuns são enviadas para o bucket `albuns` no MinIO. O bucket é criado automaticamente na inicialização da aplicação. Ao listar os álbuns, a API gera automaticamente **links pré-assinados** com expiração de 30 minutos para visualização segura.
 
 ### WebSocket
-A aplicação notifica todos os clientes conectados ao tópico `/topic/albuns` sempre que um novo álbum é cadastrado (apenas POST, não em atualizações).
+A aplicação notifica todos os clientes conectados ao tópico `/topic/albuns` sempre que um novo álbum é cadastrado (apenas POST, não em atualizações). A notificação é enviada somente após o commit da transação, garantindo consistência entre o banco de dados e os clientes WebSocket.
 - **Endpoint:** `/ws` (com suporte a SockJS)
 - **Tópico:** `/topic/albuns`
 
