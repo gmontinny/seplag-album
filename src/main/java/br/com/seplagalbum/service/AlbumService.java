@@ -9,6 +9,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,11 +32,17 @@ public class AlbumService {
                 .orElseThrow(() -> new ResourceNotFoundException("Álbum com ID " + id + " não encontrado"));
     }
 
+    @Transactional
     public Album salvar(Album album) {
         boolean isNew = album.getId() == null;
         Album salvo = repository.save(album);
         if (isNew) {
-            messagingTemplate.convertAndSend("/topic/albuns", salvo);
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    messagingTemplate.convertAndSend("/topic/albuns", salvo);
+                }
+            });
         }
         return salvo;
     }
