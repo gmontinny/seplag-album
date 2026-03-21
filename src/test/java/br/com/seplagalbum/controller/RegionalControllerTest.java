@@ -2,7 +2,7 @@ package br.com.seplagalbum.controller;
 
 import br.com.seplagalbum.dto.RegionalResponse;
 import br.com.seplagalbum.model.Regional;
-import br.com.seplagalbum.repository.RegionalRepository;
+import br.com.seplagalbum.service.RegionalService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,7 +12,6 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,7 +21,7 @@ import static org.mockito.Mockito.when;
 class RegionalControllerTest {
 
     @Mock
-    private RegionalRepository repository;
+    private RegionalService service;
 
     @InjectMocks
     private RegionalController controller;
@@ -32,7 +31,7 @@ class RegionalControllerTest {
         Regional r1 = new Regional(1L, 101, "Regional 1", true);
         Regional r2 = new Regional(2L, 102, "Regional 2", false);
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2));
+        when(service.listar(false)).thenReturn(List.of(r1, r2));
 
         ResponseEntity<CollectionModel<RegionalResponse>> response = controller.listar(false);
 
@@ -44,7 +43,7 @@ class RegionalControllerTest {
     void deveListarApenasRegionaisAtivas() {
         Regional r1 = new Regional(1L, 101, "Regional 1", true);
 
-        when(repository.findByAtivoTrue()).thenReturn(List.of(r1));
+        when(service.listar(true)).thenReturn(List.of(r1));
 
         ResponseEntity<CollectionModel<RegionalResponse>> response = controller.listar(true);
 
@@ -56,7 +55,7 @@ class RegionalControllerTest {
     void deveBuscarRegionalPorId() {
         Regional r1 = new Regional(1L, 101, "Regional 1", true);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(r1));
+        when(service.buscarPorInternalId(1L)).thenReturn(r1);
 
         ResponseEntity<RegionalResponse> response = controller.buscarPorId(1L);
 

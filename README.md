@@ -59,9 +59,9 @@ O banco de dados é composto por 4 entidades principais:
 - **Bean Validation**: Validações automáticas nos DTOs usando anotações `@NotBlank`, `@NotNull`, `@Size`.
 - **Mensagens Internacionalizadas**: Mensagens de validação centralizadas no arquivo `messages.properties` com suporte UTF-8.
 - **GlobalExceptionHandler**: Tratamento centralizado de exceções com respostas padronizadas:
-  - **404 Not Found**: Recurso não encontrado
-  - **400 Bad Request**: Erros de validação
-  - **401 Unauthorized**: Falha na autenticação
+  - **404 Not Found**: Recurso não encontrado (`ResourceNotFoundException`)
+  - **400 Bad Request**: Erros de validação (`MethodArgumentNotValidException`), arquivo inválido (`InvalidFileException`), tamanho excedido (`MaxUploadSizeExceededException`)
+  - **401 Unauthorized**: Falha na autenticação (`BadCredentialsException`)
   - **500 Internal Server Error**: Erros genéricos
 
 ## 🛠️ Como Executar
@@ -225,6 +225,14 @@ Os DTOs de resposta (`ArtistaResponse`, `AlbumResponse` e `RegionalResponse`) es
 
 ### Armazenamento de Imagens (MinIO)
 As capas dos álbuns são enviadas para o bucket `albuns` no MinIO. O bucket é criado automaticamente na inicialização da aplicação. Ao listar os álbuns, a API gera automaticamente **links pré-assinados** com expiração de 30 minutos para visualização segura.
+
+**Validação de Upload:**
+Antes de enviar o arquivo ao MinIO, o `StorageService` valida:
+- **Arquivo vazio**: Rejeita arquivos sem conteúdo.
+- **Tamanho máximo**: 5MB. Arquivos maiores retornam `400 Bad Request`.
+- **Tipos permitidos**: Apenas imagens — `JPEG`, `PNG`, `GIF`, `WebP`, `SVG`. Outros tipos retornam `400 Bad Request` com mensagem descritiva.
+
+Exceções de upload são tratadas pelo `GlobalExceptionHandler` via `InvalidFileException` e `MaxUploadSizeExceededException`.
 
 ### WebSocket
 A aplicação notifica todos os clientes conectados ao tópico `/topic/albuns` sempre que um novo álbum é cadastrado (apenas POST, não em atualizações). A notificação é enviada somente após o commit da transação, garantindo consistência entre o banco de dados e os clientes WebSocket.

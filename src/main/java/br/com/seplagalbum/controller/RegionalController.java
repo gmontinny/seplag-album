@@ -1,9 +1,8 @@
 package br.com.seplagalbum.controller;
 
 import br.com.seplagalbum.dto.RegionalResponse;
-import br.com.seplagalbum.exception.ResourceNotFoundException;
 import br.com.seplagalbum.model.Regional;
-import br.com.seplagalbum.repository.RegionalRepository;
+import br.com.seplagalbum.service.RegionalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,16 +24,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Regionais", description = "Endpoints para consulta de regionais importadas")
 public class RegionalController {
 
-    private final RegionalRepository repository;
+    private final RegionalService service;
 
     @Operation(summary = "Listar regionais", description = "Retorna a lista de regionais armazenadas internamente, permitindo filtrar apenas por ativas")
     @GetMapping
     public ResponseEntity<CollectionModel<RegionalResponse>> listar(
             @Parameter(description = "Filtrar apenas regionais ativas")
             @RequestParam(required = false, defaultValue = "false") boolean apenasAtivas) {
-        List<Regional> regionais = apenasAtivas ? repository.findByAtivoTrue() : repository.findAll();
-
-        List<RegionalResponse> content = regionais.stream()
+        List<RegionalResponse> content = service.listar(apenasAtivas).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
 
@@ -52,8 +49,7 @@ public class RegionalController {
     @GetMapping("/{internalId}")
     public ResponseEntity<RegionalResponse> buscarPorId(
             @Parameter(description = "ID interno da regional") @PathVariable Long internalId) {
-        Regional regional = repository.findById(internalId)
-                .orElseThrow(() -> new ResourceNotFoundException("Regional não encontrada com id: " + internalId));
+        Regional regional = service.buscarPorInternalId(internalId);
         return ResponseEntity.ok(toResponse(regional));
     }
 
