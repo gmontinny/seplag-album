@@ -29,8 +29,22 @@ O projeto segue o padrão de camadas clássico do Spring Boot:
 8.  **Security**: Configurações de segurança, filtros JWT e provedores de autenticação.
 9.  **Config**: Configurações gerais (CORS, MinIO, OpenAPI, WebSocket).
 
+### 📊 Diagrama Entidade-Relacionamento (DER)
+
+O diagrama abaixo ilustra a modelagem do banco de dados da aplicação:
+
+![Diagrama Entidade-Relacionamento](der.png)
+
+O banco de dados é composto por 4 entidades principais:
+
+- **Artista**: Armazena os artistas com `id`, `nome` e `tipo` (CANTOR ou BANDA).
+- **Album**: Armazena os álbuns com `id`, `titulo` e `capa_url` (referência à imagem no MinIO).
+- **artista_album**: Tabela associativa que implementa o relacionamento N:N entre Artista e Album, contendo as chaves estrangeiras `artista_id` e `album_id`.
+- **Usuario**: Armazena as credenciais de autenticação com `id`, `username` (único) e `password`.
+- **Regional**: Armazena as regionais sincronizadas do integrador externo com `internal_id`, `id` (ID do integrador), `nome` e `ativo`.
+
 ### Relacionamentos
-- **Artista <-> Álbum**: Relacionamento N:N (Muitos para Muitos).
+- **Artista <-> Álbum**: Relacionamento N:N (Muitos para Muitos) através da tabela associativa `artista_album`.
 - **Otimização N+1**: Uso de `@EntityGraph` no repositório de álbuns para carregar artistas em uma única query.
 
 ### DTOs e Mappers
