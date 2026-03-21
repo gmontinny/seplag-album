@@ -15,6 +15,8 @@ API REST para gerenciamento de artistas e álbuns, desenvolvida com Java 25 e Sp
 - **Spring WebSocket** (Notificações em tempo real)
 - **Spring HATEOAS** (Hypermedia / Richardson Maturity Model Level 3)
 - **Spring Actuator** (Health Checks)
+- **Kubernetes** (Orquestração de containers)
+- **Terraform** (Infraestrutura como Código - AWS, Azure, GCP)
 
 ## 🏗️ Arquitetura do Projeto
 
@@ -301,3 +303,130 @@ Configurado para permitir até 10 requisições por minuto por usuário. Caso ex
 ### Health Checks
 - `GET /actuator/health/liveness`
 - `GET /actuator/health/readiness`
+
+## ☸️ Kubernetes
+
+O diretório `k8s/` contém os manifests para deploy em qualquer cluster Kubernetes.
+
+### Estrutura dos Manifests
+
+| Arquivo | Descrição |
+|---|---|
+| `namespace.yml` | Namespace `seplag-album` |
+| `configmap.yml` | Configurações não-sensíveis (bucket, porta, JWT expiration) |
+| `secret.yml` | Template para credenciais (DB, MinIO/S3, JWT secret) |
+| `deployment.yml` | Deployment com 2 réplicas, probes (readiness, liveness, startup), resource limits e topology spread |
+| `service.yml` | ClusterIP Service na porta 80 → 8080 |
+| `ingress.yml` | Ingress NGINX com TLS, suporte a WebSocket e rate limit |
+| `hpa-pdb.yml` | HorizontalPodAutoscaler (2-10 pods, CPU 70%/Memory 80%) e PodDisruptionBudget (minAvailable: 1) |
+| `sa-networkpolicy.yml` | ServiceAccount com annotations para IRSA/Workload Identity e NetworkPolicy restritiva |
+
+### Deploy
+
+```bash
+# Criar namespace e aplicar todos os manifests
+kubectl apply -f k8s/namespace.yml
+
+# Editar o secret.yml com valores reais em base64
+# echo -n 'valor' | base64
+kubectl apply -f k8s/
+```
+
+> **Nota:** Substitua `<REGISTRY>` no `deployment.yml` pela URL do registry da cloud escolhida (ECR, ACR ou Artifact Registry).
+
+### Características de Produção
+- **Alta Disponibilidade**: Mínimo 2 réplicas com topology spread entre nodes
+- **Auto-scaling**: HPA baseado em CPU e memória com políticas de scale-down conservadoras
+- **Segurança**: Pods rodam como non-root (UID 1000), NetworkPolicy restringe tráfego
+- **Zero Downtime Deploy**: RollingUpdate com maxUnavailable=0 e PDB
+- **Health Probes**: Startup, readiness e liveness probes via Spring Actuator
+- **WebSocket**: Ingress configurado com proxy timeouts e upgrade de conexão
+
+## 🌍 Terraform (Infraestrutura como Código)
+
+O diretório `terraform/` contém configurações para provisionar a infraestrutura completa em 3 clouds. Em produção, o **MinIO é substituído pelo object storage nativo** de cada cloud (mais barato, durável e gerenciado).
+
+### Arquitetura por Cloud
+
+| Componente | AWS | Azure | GCP |
+|---|---|---|---|
+| **Kubernetes** | EKS | AKS | GKE |
+| **Banco de Dados** | RDS PostgreSQL 16 | PostgreSQL Flexible Server 16 | Cloud SQL PostgreSQL 16 |
+| **Object Storage** | S3 | Blob Storage | Cloud Storage |
+| **Container Registry** | ECR | ACR | Artifact Registry |
+| **Rede** | VPC + 3 AZs (public, private, database subnets) | VNet + subnets (AKS, DB) | VPC + subnet com ranges secundários (pods, services) |
+| **IAM / Workload Identity** | IRSA (IAM Roles for Service Accounts) | Workload Identity | Workload Identity Federation |
+
+### Recursos de Produção (comuns às 3 clouds)
+- **Banco de dados**: Multi-AZ/Zone-Redundant, backups automáticos (7 dias), criptografia, rede privada
+- **Object Storage**: Versionamento, criptografia, acesso privado, lifecycle (transição para storage frio após 90 dias)
+- **Kubernetes**: Auto-scaling de nodes (2-5), rede privada, Workload Identity
+- **Container Registry**: Scan de imagens, política de retenção (20 imagens)
+- **Rede**: Cluster em subnets privadas, NAT Gateway para acesso externo, banco isolado
+
+### Como Usar
+
+#### AWS
+```bash
+cd terraform/aws
+
+# Criar bucket S3 para state (uma vez)
+aws s3 mb s3://seplag-album-tfstate --region us-east-1
+
+terraform init
+terraform plan -var="db_username=<username>" -var="db_password=<password>"
+terraform apply -var="db_username=<username>" -var="db_password=<password>"
+
+# Configurar kubectl
+aws eks update-kubeconfig --name seplag-album-prod --region us-east-1
+```
+
+#### Azure
+```bash
+cd terraform/azure
+
+# Criar resource group e storage account para state (uma vez)
+az group create --name seplag-album-tfstate --location eastus
+az storage account create --name seplagalbumtfstate --resource-group seplag-album-tfstate --sku Standard_LRS
+az storage container create --name tfstate --account-name seplagalbumtfstate
+
+terraform init
+terraform plan -var="db_username=<username>" -var="db_password=<password>"
+terraform apply -var="db_username=<username>" -var="db_password=<password>"
+
+# Configurar kubectl
+az aks get-credentials --resource-group seplag-album-prod --name seplag-album-prod
+```
+
+#### GCP
+```bash
+cd terraform/gcp
+
+# Criar bucket GCS para state (uma vez)
+gsutil mb -l us-east1 gs://seplag-album-tfstate
+
+terraform init
+terraform plan -var="project_id=<gcp-project-id>" -var="db_username=<username>" -var="db_password=<password>"
+terraform apply -var="project_id=<gcp-project-id>" -var="db_username=<username>" -var="db_password=<password>"
+
+# Configurar kubectl
+gcloud container clusters get-credentials seplag-album-prod --region us-east1
+```
+
+### Fluxo Completo de Deploy
+
+```bash
+# 1. Provisionar infraestrutura (exemplo AWS)
+cd terraform/aws && terraform apply
+
+# 2. Build e push da imagem
+docker build -t <ECR_URL>/seplag-album:v1.0.0 .
+docker push <ECR_URL>/seplag-album:v1.0.0
+
+# 3. Atualizar image no deployment.yml e aplicar manifests
+kubectl apply -f k8s/
+
+# 4. Verificar status
+kubectl -n seplag-album get pods
+kubectl -n seplag-album get ingress
+```
