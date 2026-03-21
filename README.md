@@ -13,6 +13,7 @@ API REST para gerenciamento de artistas e álbuns, desenvolvida com Java 25 e Sp
 - **Bucket4j** (Rate limit: 10 req/min)
 - **Springdoc OpenAPI/Swagger** (Documentação)
 - **Spring WebSocket** (Notificações em tempo real)
+- **Spring HATEOAS** (Hypermedia / Richardson Maturity Model Level 3)
 - **Spring Actuator** (Health Checks)
 
 ## 🏗️ Arquitetura do Projeto
@@ -49,7 +50,7 @@ O banco de dados é composto por 4 entidades principais:
 
 ### DTOs e Mappers
 - **Request DTOs**: `ArtistaRequest`, `AlbumRequest` - Recebem dados nas requisições POST/PUT.
-- **Response DTOs**: `ArtistaResponse`, `AlbumResponse` - Retornam dados nas respostas.
+- **Response DTOs**: `ArtistaResponse`, `AlbumResponse`, `RegionalResponse` - Retornam dados nas respostas.
 - **Mappers**: `ArtistaMapper`, `AlbumMapper` - Convertem entre entidades e DTOs usando **MapStruct**, separando a camada de apresentação da camada de domínio.
 
 ### Validações e Tratamento de Erros
@@ -118,17 +119,105 @@ A maioria dos endpoints requer um token JWT no cabeçalho `Authorization`.
 
 ### Artistas
 - `GET /api/v1/artistas?nome=Mike&ordem=desc`: Lista artistas com filtro e ordenação alfabética.
+- `GET /api/v1/artistas/{id}`: Busca um artista por ID.
 - `POST /api/v1/artistas`: Cadastra um novo artista.
 - `PUT /api/v1/artistas/{id}`: Atualiza um artista existente.
 
 ### Álbuns
 - `GET /api/v1/albuns?tipo=CANTOR&page=0&size=10`: Lista álbuns com paginação e filtro por tipo (CANTOR/BANDA).
+- `GET /api/v1/albuns/{id}`: Busca um álbum por ID.
 - `POST /api/v1/albuns`: Cadastra um novo álbum.
 - `PUT /api/v1/albuns/{id}`: Atualiza um álbum.
 - `POST /api/v1/albuns/{id}/capa`: Upload de imagem de capa (Multipart).
 
 ### Regionais
 - `GET /api/v1/regionais?apenasAtivas=true`: Lista as regionais importadas do integrador externo.
+- `GET /api/v1/regionais/{internalId}`: Busca uma regional por ID interno.
+
+## 🔗 HATEOAS (Richardson Maturity Model - Level 3)
+
+A API implementa o nível 3 do Modelo de Maturidade de Richardson utilizando **Spring HATEOAS**, onde cada resposta inclui links hipermídia que permitem ao cliente navegar pela API de forma dinâmica, sem precisar conhecer as URLs previamente.
+
+Os DTOs de resposta (`ArtistaResponse`, `AlbumResponse` e `RegionalResponse`) estendem `RepresentationModel`, permitindo a adição de links HAL.
+
+### Links por Recurso
+
+**Artista:**
+- `self`: Link para o próprio artista (`GET /api/v1/artistas/{id}`)
+- `artistas`: Link para a listagem de artistas (`GET /api/v1/artistas`)
+
+**Álbum:**
+- `self`: Link para o próprio álbum (`GET /api/v1/albuns/{id}`)
+- `albuns`: Link para a listagem de álbuns (`GET /api/v1/albuns`)
+- `upload-capa`: Link para upload da capa (`POST /api/v1/albuns/{id}/capa`)
+
+**Regional:**
+- `self`: Link para a própria regional (`GET /api/v1/regionais/{internalId}`)
+- `regionais`: Link para a listagem de regionais (`GET /api/v1/regionais`)
+
+### Exemplo de Resposta (Artista)
+```json
+{
+  "id": 1,
+  "nome": "Linkin Park",
+  "tipo": "BANDA",
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/v1/artistas/1" },
+    "artistas": { "href": "http://localhost:8080/api/v1/artistas?ordem=asc" }
+  }
+}
+```
+
+### Exemplo de Resposta (Regional)
+```json
+{
+  "internalId": 1,
+  "id": 10,
+  "nome": "Regional Norte",
+  "ativo": true,
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/v1/regionais/1" },
+    "regionais": { "href": "http://localhost:8080/api/v1/regionais?apenasAtivas=false" }
+  }
+}
+```
+
+### Exemplo de Resposta (Álbum - Paginado)
+```json
+{
+  "_embedded": {
+    "albumResponseList": [
+      {
+        "id": 1,
+        "titulo": "Hybrid Theory",
+        "capaUrl": "https://minio/...",
+        "artistas": [{ "id": 1, "nome": "Linkin Park", "tipo": "BANDA" }],
+        "_links": {
+          "self": { "href": "http://localhost:8080/api/v1/albuns/1" },
+          "albuns": { "href": "http://localhost:8080/api/v1/albuns?page=0&size=10" },
+          "upload-capa": { "href": "http://localhost:8080/api/v1/albuns/1/capa" }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/v1/albuns?page=0&size=10" },
+    "next": { "href": "http://localhost:8080/api/v1/albuns?page=1&size=10" }
+  },
+  "page": {
+    "size": 10,
+    "totalElements": 15,
+    "totalPages": 2,
+    "number": 0
+  }
+}
+```
+
+### Respostas HTTP Semânticas
+- **POST** retorna `201 Created` com header `Location` apontando para o recurso criado.
+- **GET** e **PUT** retornam `200 OK`.
+- Listagem de álbuns utiliza `PagedModel` com metadados de paginação e links `next`/`prev`.
+- Listagem de artistas e regionais utiliza `CollectionModel`.
 
 ## 🌟 Funcionalidades Especiais
 
